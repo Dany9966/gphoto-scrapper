@@ -12,13 +12,13 @@ def check_download_dir(path):
     return path
 
 
-def download_item(download_path, item, skip_existing=False):
+def download_item(download_dir, item, skip_existing=False, sort=False):
     url = item.get('baseUrl')
     filename = item.get('filename', '')
     if not all([url, filename]):
         LOG.debug('url=%s; filename=%s', url, filename)
         raise Exception('Download failed. URL or filename not provided.')
-    path = os.path.join(download_path, filename)
+    path = os.path.join(download_dir, filename)
     if os.path.exists(path) and skip_existing:
         LOG.warning("Skipping downloading item with name: %s. Already exists.",
                     filename)

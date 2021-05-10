@@ -1,3 +1,5 @@
+import os
+
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
@@ -39,18 +41,26 @@ class MediaService(object):
 
         self._service = service.mediaItems()
 
-    def download_media_page(self, media_page_list, skip_existing=False):
+    def download_media_page(self, media_page_list, skip_existing=False,
+                            sort=False):
         for item in media_page_list:
-            utils.download_item(self._download_path, item,
+            download_dir = self._download_path
+            if sort:
+                item_creation_month = item.get('mediaMetadata', {}).get(
+                    'creationTime')[:7]
+                if item_creation_month:
+                    download_dir = utils.check_download_dir(
+                        os.path.join(self._download_path, item_creation_month))
+            utils.download_item(download_dir, item, sort=sort,
                                 skip_existing=skip_existing)
             self._last_downloaded_id = item.get('id')
 
-    def start(self, page_size=25, skip_existing=False):
+    def start(self, page_size=25, skip_existing=False, sort=False):
         LOG.info('Starting download process.')
         media_page = self.get_media_page(page_size=page_size)
         next_page_token = media_page.get('nextPageToken', '')
         # next_page_token = ''
-        self.download_media_page(media_page.get('mediaItems', []),
+        self.download_media_page(media_page.get('mediaItems', []), sort=sort,
                                  skip_existing=skip_existing)
         LOG.info("Finished downloading page (of %s items)", page_size)
         LOG.debug("Next page token: %s", next_page_token)
@@ -59,7 +69,7 @@ class MediaService(object):
             media_page = self.get_media_page(page_size, next_page_token)
             next_page_token = media_page.get('nextPageToken', '')
             self.download_media_page(media_page.get('mediaItems', []),
-                                     skip_existing=skip_existing)
+                                     skip_existing=skip_existing, sort=sort)
             LOG.info("Finished downloading page (of %s items)", page_size)
             LOG.debug("Next page token: %s", next_page_token)
 
