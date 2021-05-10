@@ -73,6 +73,8 @@ class MediaService(object):
             LOG.info("Finished downloading page (of %s items)", page_size)
             LOG.debug("Next page token: %s", next_page_token)
 
+        LOG.info("Download complete!")
+
     def stop(self):
         LOG.warning('An error occurred. Stopping download process at %s',
                     self._last_downloaded_id)
