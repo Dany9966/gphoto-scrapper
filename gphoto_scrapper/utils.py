@@ -12,9 +12,7 @@ def check_download_dir(path):
     return path
 
 
-def download_item(download_dir, item, skip_existing=False, sort=False):
-    url = item.get('baseUrl')
-    filename = item.get('filename', '')
+def download_item(download_dir, url, filename, skip_existing=False):
     if not all([url, filename]):
         LOG.debug('url=%s; filename=%s', url, filename)
         raise Exception('Download failed. URL or filename not provided.')
@@ -23,5 +21,12 @@ def download_item(download_dir, item, skip_existing=False, sort=False):
         LOG.warning("Skipping downloading item with name: %s. Already exists.",
                     filename)
         return
-    urllib.request.urlretrieve(url, path)
-    LOG.info('Downloaded item with ID: %s to path: %s', item.get('id'), path)
+
+    try:
+        urllib.request.urlretrieve(url, path)
+    except Exception as ex:
+        LOG.error('Error occurred while downloading %s from url: %s. '
+                  'Error was: %s', filename, url, str(ex))
+        raise ex
+
+    return path

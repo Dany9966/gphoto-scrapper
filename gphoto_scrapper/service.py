@@ -43,6 +43,13 @@ class MediaService(object):
 
     def download_media_page(self, media_page_list, skip_existing=False,
                             sort=False):
+        def _generate_url_from_item(item):
+            suffix = '=d'
+            if 'video' in item['mimeType']:
+                suffix = '=dv'
+            url = '%s%s' % (item['baseUrl'], suffix)
+            return url
+
         for item in media_page_list:
             download_dir = self._download_path
             if sort:
@@ -51,8 +58,12 @@ class MediaService(object):
                 if item_creation_month:
                     download_dir = utils.check_download_dir(
                         os.path.join(self._download_path, item_creation_month))
-            utils.download_item(download_dir, item, sort=sort,
-                                skip_existing=skip_existing)
+            url = _generate_url_from_item(item)
+            path = utils.download_item(download_dir, url, item['filename'],
+                                       skip_existing=skip_existing)
+            if path:
+                LOG.info('Downloaded item with ID: %s to path: %s',
+                         item.get('id'), path)
             self._last_downloaded_id = item.get('id')
 
     def start(self, page_size=25, skip_existing=False, sort=False):
