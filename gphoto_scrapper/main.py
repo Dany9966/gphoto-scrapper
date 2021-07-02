@@ -43,7 +43,7 @@ def main():
                             skip_existing=args.skip_existing,
                              sort=args.sort,
                             skip_failed_items=args.skip_failing_downloads)
-    except Exception as ex:
+    except (Exception, KeyboardInterrupt) as ex:
         media_service.stop()
         raise ex
 
