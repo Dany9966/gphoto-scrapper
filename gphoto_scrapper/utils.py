@@ -1,4 +1,7 @@
+import functools
 import os
+import time
+import traceback
 import urllib.request
 
 from gphoto_scrapper import log
@@ -23,10 +26,35 @@ def download_item(download_dir, url, filename, skip_existing=False):
         return
 
     try:
-        urllib.request.urlretrieve(url, path)
+        retry_request()(urllib.request.urlretrieve)(url, path)
     except Exception as ex:
         LOG.error('Error occurred while downloading %s from url: %s. '
                   'Error was: %s', filename, url, str(ex))
-        raise ex
+        return
 
     return path
+
+
+def retry_request(max_retries=5, retry_interval=3):
+    def _retry_request(func):
+        @functools.wraps(func)
+        def _exec_retry(*args, **kwargs):
+            i = 0
+            while True:
+                try:
+                    return func(*args, **kwargs)
+                except KeyboardInterrupt as ex:
+                    LOG.info('Operation cancelled, skip retrying')
+                    LOG.exception(ex)
+                    raise
+                except Exception as ex:
+                    i += 1
+                    if i < max_retries:
+                        LOG.warning(
+                            "Exception occurred, retrying (%d/%d):\n%s",
+                            i, max_retries, traceback.format_exc())
+                        time.sleep(retry_interval)
+                    else:
+                        raise
+        return _exec_retry
+    return _retry_request
