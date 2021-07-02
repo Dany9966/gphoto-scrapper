@@ -15,7 +15,8 @@ def check_download_dir(path):
     return path
 
 
-def download_item(download_dir, url, filename, skip_existing=False):
+def download_item(download_dir, url, filename, skip_existing=False,
+                  skip_failed_items=False):
     if not all([url, filename]):
         LOG.debug('url=%s; filename=%s', url, filename)
         raise Exception('Download failed. URL or filename not provided.')
@@ -27,12 +28,12 @@ def download_item(download_dir, url, filename, skip_existing=False):
 
     try:
         retry_request()(urllib.request.urlretrieve)(url, path)
+        return path
     except Exception as ex:
         LOG.error('Error occurred while downloading %s from url: %s. '
                   'Error was: %s', filename, url, str(ex))
-        return
-
-    return path
+        if not skip_failed_items:
+            raise
 
 
 def retry_request(max_retries=5, retry_interval=3):

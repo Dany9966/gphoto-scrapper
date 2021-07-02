@@ -42,7 +42,7 @@ class MediaService(object):
         self._service = service.mediaItems()
 
     def download_media_page(self, media_page_list, skip_existing=False,
-                            sort=False):
+                            sort=False, skip_failed_items=False):
         def _generate_url_from_item(item):
             suffix = '=d'
             if 'video' in item['mimeType']:
@@ -60,19 +60,22 @@ class MediaService(object):
                         os.path.join(self._download_path, item_creation_month))
             url = _generate_url_from_item(item)
             path = utils.download_item(download_dir, url, item['filename'],
-                                       skip_existing=skip_existing)
+                                       skip_existing=skip_existing,
+                                       skip_failed_items=skip_failed_items)
             if path:
                 LOG.info('Downloaded item with ID: %s to path: %s',
                          item.get('id'), path)
             self._last_downloaded_id = item.get('id')
 
-    def start(self, page_size=25, skip_existing=False, sort=False):
+    def start(self, page_size=25, skip_existing=False, sort=False,
+              skip_failed_items=False):
         LOG.info('Starting download process.')
         media_page = self.get_media_page(page_size=page_size)
         next_page_token = media_page.get('nextPageToken', '')
         media_page_items = media_page.get('mediaItems', [])
         self.download_media_page(media_page_items, sort=sort,
-                                 skip_existing=skip_existing)
+                                 skip_existing=skip_existing,
+                                 skip_failed_items=skip_failed_items)
         LOG.info("Finished downloading page (of %s items)",
                  len(media_page_items))
         LOG.debug("Next page token: %s", next_page_token)
@@ -82,7 +85,8 @@ class MediaService(object):
             next_page_token = media_page.get('nextPageToken', '')
             media_page_items = media_page.get('mediaItems', [])
             self.download_media_page(media_page_items,
-                                     skip_existing=skip_existing, sort=sort)
+                                     skip_existing=skip_existing, sort=sort,
+                                     skip_failed_items=skip_failed_items)
             LOG.info("Finished downloading page (of %s items)",
                      len(media_page_items))
             LOG.debug("Next page token: %s", next_page_token)
