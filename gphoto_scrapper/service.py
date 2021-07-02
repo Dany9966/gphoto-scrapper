@@ -70,18 +70,21 @@ class MediaService(object):
         LOG.info('Starting download process.')
         media_page = self.get_media_page(page_size=page_size)
         next_page_token = media_page.get('nextPageToken', '')
-        # next_page_token = ''
-        self.download_media_page(media_page.get('mediaItems', []), sort=sort,
+        media_page_items = media_page.get('mediaItems', [])
+        self.download_media_page(media_page_items, sort=sort,
                                  skip_existing=skip_existing)
-        LOG.info("Finished downloading page (of %s items)", page_size)
+        LOG.info("Finished downloading page (of %s items)",
+                 len(media_page_items))
         LOG.debug("Next page token: %s", next_page_token)
 
         while next_page_token:
             media_page = self.get_media_page(page_size, next_page_token)
             next_page_token = media_page.get('nextPageToken', '')
-            self.download_media_page(media_page.get('mediaItems', []),
+            media_page_items = media_page.get('mediaItems', [])
+            self.download_media_page(media_page_items,
                                      skip_existing=skip_existing, sort=sort)
-            LOG.info("Finished downloading page (of %s items)", page_size)
+            LOG.info("Finished downloading page (of %s items)",
+                     len(media_page_items))
             LOG.debug("Next page token: %s", next_page_token)
 
         LOG.info("Download complete!")
