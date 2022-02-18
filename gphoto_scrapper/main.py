@@ -15,7 +15,7 @@ def main():
     parser.add_argument('--secrets-file', type=str, required=True,
                         help='Path to JSON file containing the API secrets')
     parser.add_argument('--page-size', type=int, default=25,
-                        choices=range(1,101),
+                        choices=[25, 50, 100],
                         help='The number of items to download at once. '
                              'Default is 25. Maximum is 100')
     parser.add_argument('--skip-existing', default=False, action='store_true',
