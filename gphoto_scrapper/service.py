@@ -41,6 +41,16 @@ class MediaService(object):
 
         self._service = service.mediaItems()
 
+    @property
+    def service(self):
+        if self._service is None:
+            self.build_service()
+        return self._service
+
+    @property
+    def last_downloaded_id(self):
+        return self._last_downloaded_id
+
     def download_media_page(self, media_page_list, skip_existing=False,
                             sort=False, skip_failed_items=False):
         def _generate_url_from_item(item):
@@ -99,7 +109,7 @@ class MediaService(object):
 
     def get_media_page(self, page_size=25, next_page_token=''):
         try:
-            media_page = self._service.list(
+            media_page = self.service.list(
                 pageSize=page_size, pageToken=next_page_token).execute()
         except Exception as ex:
             LOG.error('Failed to fetch media page.')
