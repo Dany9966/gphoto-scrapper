@@ -31,9 +31,13 @@ def main():
     parser.add_argument('--skip-failing-downloads', default=False,
                         action='store_true',
                         help='Skip items that failed downloading')
+    parser.add_argument('--update', default=False, action='store_true',
+                        help="Update current media directory. Download stops"
+                             "at first existing media found in selected dir.")
     args = parser.parse_args()
 
     log.configure_logging(args.log_file)
+    LOG = log.get_logger()
     media_service = service.MediaService(args.secrets_file, SCOPES,
                                          download_path=args.download_dir)
     media_service.build_service()
@@ -41,9 +45,11 @@ def main():
     try:
         media_service.start(page_size=args.page_size,
                             skip_existing=args.skip_existing,
-                             sort=args.sort,
+                            sort=args.sort, update_dir=args.update,
                             skip_failed_items=args.skip_failing_downloads)
     except (Exception, KeyboardInterrupt) as ex:
+        LOG.warning('An error occurred. Stopping download process at %s',
+                    media_service.last_downloaded_id)
         media_service.stop()
         raise ex
 

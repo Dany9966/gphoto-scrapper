@@ -20,6 +20,7 @@ class MediaService(object):
         self._service = None
         self._last_downloaded_id = last_downloaded_id
         self._download_path = utils.check_download_dir(download_path)
+        self._stop = False
 
     def build_service(self):
         flow = InstalledAppFlow.from_client_secrets_file(
@@ -52,7 +53,8 @@ class MediaService(object):
         return self._last_downloaded_id
 
     def download_media_page(self, media_page_list, skip_existing=False,
-                            sort=False, skip_failed_items=False):
+                            sort=False, skip_failed_items=False,
+                            update_dir=False):
         def _generate_url_from_item(item):
             suffix = '=d'
             if 'video' in item['mimeType']:
@@ -71,26 +73,34 @@ class MediaService(object):
             url = _generate_url_from_item(item)
             path = utils.download_item(download_dir, url, item['filename'],
                                        skip_existing=skip_existing,
-                                       skip_failed_items=skip_failed_items)
+                                       skip_failed_items=skip_failed_items,
+                                       update_dir=update_dir)
             if path:
                 LOG.info('Downloaded item with ID: %s to path: %s',
                          item.get('id'), path)
+            else:
+                if update_dir:
+                    LOG.info("Existing media detected. Update complete!")
+                    self.stop()
+                    break
+
             self._last_downloaded_id = item.get('id')
 
     def start(self, page_size=25, skip_existing=False, sort=False,
-              skip_failed_items=False):
+              skip_failed_items=False, update_dir=False):
         LOG.info('Starting download process.')
         media_page = self.get_media_page(page_size=page_size)
         next_page_token = media_page.get('nextPageToken', '')
         media_page_items = media_page.get('mediaItems', [])
         self.download_media_page(media_page_items, sort=sort,
                                  skip_existing=skip_existing,
-                                 skip_failed_items=skip_failed_items)
+                                 skip_failed_items=skip_failed_items,
+                                 update_dir=update_dir)
         LOG.info("Finished downloading page (of %s items)",
                  len(media_page_items))
         LOG.debug("Next page token: %s", next_page_token)
 
-        while next_page_token:
+        while next_page_token and not self._stop:
             media_page = self.get_media_page(page_size, next_page_token)
             next_page_token = media_page.get('nextPageToken', '')
             media_page_items = media_page.get('mediaItems', [])
@@ -104,8 +114,7 @@ class MediaService(object):
         LOG.info("Download complete!")
 
     def stop(self):
-        LOG.warning('An error occurred. Stopping download process at %s',
-                    self._last_downloaded_id)
+        self._stop = True
 
     def get_media_page(self, page_size=25, next_page_token=''):
         try:
